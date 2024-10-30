@@ -5,20 +5,23 @@
 #  By using this project, users acknowledge and agree to abide by these terms and conditions.
 
 import asyncio
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from nacos import NacosClient
 
-from app.config import NacosConfig
+from app import config
+
 
 
 # Nacos客户端包装类
 class NacosClientWrapper:
     def __init__(self):
         self.nacos_client = NacosClient(
-            server_addresses=NacosConfig.NACOS_SERVER_ADDR,
-            namespace=NacosConfig.NACOS_NAMESPACE,
-            username=NacosConfig.NACOS_USERNAME,
-            password=NacosConfig.NACOS_PASSWORD
+            server_addresses=config.NacosConfig.NACOS_SERVER_ADDR,
+            namespace=config.NacosConfig.NACOS_NAMESPACE,
+            username=config.NacosConfig.NACOS_USERNAME,
+            password=config.NacosConfig.NACOS_PASSWORD
         )
 
     # 注册服务
@@ -50,7 +53,7 @@ class NacosClientWrapper:
                 )
             except Exception as e:
                 print(f"实例连接失败： {e}")
-            await asyncio.sleep(NacosConfig.HEARTBEAT_INTERVAL)
+            await asyncio.sleep(config.NacosConfig.HEARTBEAT_INTERVAL)
 
     # 注销服务
     async def unregister_service(self, service_name, group_name, ip, port):
@@ -64,3 +67,39 @@ class NacosClientWrapper:
 
 # 创建Nacos客户端实例
 nacos_client = NacosClientWrapper()
+
+# 生命周期管理
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 获取当前服务的信息
+    service_name = config.NacosConfig.NACOS_SERVICE_NAME
+    group_name = config.NacosConfig.NACOS_GROUP
+    ip = config.GatewayConfig.SERVER_IP
+    port = config.GatewayConfig.SERVER_PORT
+
+    # 注册服务到Nacos
+    await nacos_client.register_service(service_name, group_name, ip, port)
+
+    # 启动心跳任务
+    heartbeat_task = asyncio.create_task(nacos_client.service_heartbeat(service_name, group_name, ip, port))
+
+    try:
+        yield
+    finally:
+        # 取消心跳任务
+        heartbeat_task.cancel()
+        try:
+            # 等待心跳任务完成或被取消
+            await asyncio.wait_for(heartbeat_task, timeout=1)
+        except asyncio.exceptions.CancelledError:
+            # 如果心跳任务被取消，忽略错误
+            pass
+        except asyncio.exceptions.TimeoutError:
+            # 如果等待超时，忽略错误
+            pass
+
+    # 注销服务
+    await nacos_client.unregister_service(service_name, group_name, ip, port)
+
+
+

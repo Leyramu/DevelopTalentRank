@@ -11,9 +11,9 @@ import os
 class NacosConfig:
     NACOS_SERVER_ADDR = os.getenv('NACOS_SERVER_ADDR', 'localhost:8848')
     NACOS_NAMESPACE = os.getenv('NACOS_NAMESPACE', '356d484c-399c-4a23-9419-e200e8edbff9')
-    NACOS_GROUP = os.getenv('NACOS_GROUP', 'Service_GROUP')
+    NACOS_GROUP = os.getenv('NACOS_GROUP', 'SERVICE_GROUP')
     NACOS_USERNAME = os.getenv('NACOS_USERNAME', 'nacos')
     NACOS_PASSWORD = os.getenv('NACOS_PASSWORD', 'Zcx@223852//')
-    NACOS_DATA_ID = os.getenv('NACOS_DATA_ID', 'leyramu-gateway-algo.yml')
-    NACOS_SERVICE_NAME = os.getenv('NACOS_SERVICE_NAME', 'leyramu-gateway-algo')
+    NACOS_DATA_ID = os.getenv('NACOS_DATA_ID', 'lersosa-service-python.yml')
+    NACOS_SERVICE_NAME = os.getenv('NACOS_SERVICE_NAME', 'lersosa-service-python')
     HEARTBEAT_INTERVAL = os.getenv('HEARTBEAT_INTERVAL', 10)

@@ -4,31 +4,28 @@
 #  The author disclaims all warranties, express or implied, including but not limited to the warranties of merchantability and fitness for a particular purpose. Under no circumstances shall the author be liable for any special, incidental, indirect, or consequential damages arising from the use of this software.
 #  By using this project, users acknowledge and agree to abide by these terms and conditions.
 
-from fastapi import FastAPI, Response
-from fastapi.requests import Request
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from app import routes
+from app import nacos
+from app.routes import root_router
 
-# 创建FastAPI应用实例
-app = FastAPI(lifespan=routes.lifespan)
-
-
-# 自定义路由装饰器
-def custom_route(path: str, **kwargs):
-    def decorator(func):
-        return app.add_api_route(path, func, **kwargs)
-
-    return decorator
+# # 创建FastAPI应用实例
+app = FastAPI(lifespan=nacos.lifespan)
 
 
-# 使用自定义路由装饰器
+# 注册路由
+app.include_router(root_router)
 
 
-
-async def proxy_to_service(request: Request, service_name: str):
-    route = routes.ServiceDiscoveryRoute(endpoint=proxy_to_service, path="/{service_name:path}")
-    return await route.dispatch(request)
-
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 根路由
 @app.get("/")
